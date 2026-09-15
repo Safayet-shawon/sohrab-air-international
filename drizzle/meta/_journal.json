@@ -15,6 +15,13 @@
       "when": 1789475380982,
       "tag": "0001_lively_multiple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789478063228,
+      "tag": "0002_silent_miek",
+      "breakpoints": true
     }
   ]
 }

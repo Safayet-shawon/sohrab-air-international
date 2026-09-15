@@ -1,7 +1,9 @@
 import { env } from "cloudflare:workers";
+import { isDenied, requireAdmin } from "@/backend/admin-auth";
 
 export async function GET(request: Request, context: { params: Promise<{ key: string }> }) {
-  if (!request.headers.get("oai-authenticated-user-id")) return new Response("Sign in required", { status: 401 });
+  const actor = await requireAdmin(request);
+  if (isDenied(actor)) return actor;
   if (!env.BUCKET) return new Response("Storage unavailable", { status: 503 });
   const { key } = await context.params;
   const object = await env.BUCKET.get(`passports/${key}`);

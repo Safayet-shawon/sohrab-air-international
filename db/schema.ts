@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const submissions = sqliteTable("submissions", {
   id: text("id").primaryKey(),
@@ -10,9 +10,18 @@ export const submissions = sqliteTable("submissions", {
   email: text("email"),
   payloadJson: text("payload_json").notNull().default("{}"),
   fileKey: text("file_key"),
+  area: text("area").notNull().default("Unspecified"),
+  travellersCount: integer("travellers_count").notNull().default(1),
+  groupLeaderName: text("group_leader_name"),
+  packageId: text("package_id"),
+  revenue: integer("revenue").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (table) => [index("idx_submissions_created_at").on(table.createdAt)]);
+}, (table) => [
+  index("idx_submissions_created_at").on(table.createdAt),
+  index("idx_submissions_type_area").on(table.type, table.area),
+  index("idx_submissions_group_leader").on(table.groupLeaderName),
+]);
 
 export const auditEvents = sqliteTable("audit_events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -21,3 +30,29 @@ export const auditEvents = sqliteTable("audit_events", {
   actorId: text("actor_id"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const staffMembers = sqliteTable("staff_members", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  name: text("name").notNull(),
+  role: text("role").notNull().default("manager"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdBy: text("created_by"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [uniqueIndex("idx_staff_identifier").on(table.identifier)]);
+
+export const packages = sqliteTable("packages", {
+  id: text("id").primaryKey(),
+  category: text("category").notNull(),
+  nameBn: text("name_bn").notNull(),
+  nameEn: text("name_en").notNull(),
+  descriptionBn: text("description_bn").notNull().default(""),
+  descriptionEn: text("description_en").notNull().default(""),
+  price: integer("price").notNull().default(0),
+  durationDays: integer("duration_days").notNull().default(0),
+  destinationsJson: text("destinations_json").notNull().default("[]"),
+  inclusionsJson: text("inclusions_json").notNull().default("[]"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_packages_category_active").on(table.category, table.active)]);

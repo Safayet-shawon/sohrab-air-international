@@ -3,9 +3,11 @@ import { env } from "cloudflare:workers";
 import { getDb } from "@/db";
 import { auditEvents, submissions } from "@/db/schema";
 import { clean, isPhone, submissionTypes } from "@/lib/submission";
+import { isDenied, requireAdmin } from "@/backend/admin-auth";
 
 export async function GET(request: Request) {
-  if (!request.headers.get("oai-authenticated-user-id")) return Response.json({ error: "Sign in required" }, { status: 401 });
+  const actor = await requireAdmin(request);
+  if (isDenied(actor)) return actor;
   const rows = await getDb().select().from(submissions).orderBy(desc(submissions.createdAt)).limit(100);
   return Response.json({ submissions: rows });
 }
@@ -38,8 +40,11 @@ export async function POST(request: Request) {
     for (const [key, value] of form.entries()) if (!["type", "name", "phone", "email", "passport"].includes(key) && typeof value === "string") payload[key] = value.trim().slice(0, 1000);
     const id = crypto.randomUUID();
     const db = getDb();
+    const travellersCount = Math.max(1, Math.min(1000, Number(payload.travellers) || 1));
+    const area = (payload.area || payload.address || "Unspecified").slice(0, 160);
+    const groupLeaderName = (payload.group_leader || payload.groupLeader || "").slice(0, 160) || null;
     await db.batch([
-      db.insert(submissions).values({ id, type, name, phone, email, payloadJson: JSON.stringify(payload), fileKey }),
+      db.insert(submissions).values({ id, type, name, phone, email, payloadJson: JSON.stringify(payload), fileKey, travellersCount, area, groupLeaderName }),
       db.insert(auditEvents).values({ submissionId: id, action: "created", actorId: request.headers.get("oai-authenticated-user-id") }),
     ]);
     return Response.json({ id, reference: `SAI-${id.slice(0, 8).toUpperCase()}` }, { status: 201 });
