@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-labelledby="title desc">
-  <title id="title">Sohrab Air International emblem</title>
-  <desc id="desc">A modern gold arch and flight path forming an abstract S and A on deep green.</desc>
-  <rect width="180" height="180" rx="48" fill="#073c30"/>
-  <path d="M45 130V82c0-28 18-49 45-59 27 10 45 31 45 59v48" fill="none" stroke="#d7ad59" stroke-width="11" stroke-linecap="round"/>
-  <path d="M58 112c15-25 35-42 64-52-7 18-20 30-38 39l17 13-8 5-25-9-10 4Z" fill="#fff"/>
-  <path d="M55 137h70" stroke="#d7ad59" stroke-width="9" stroke-linecap="round"/>
-  <circle cx="90" cy="22" r="5" fill="#fff"/>
-</svg>
