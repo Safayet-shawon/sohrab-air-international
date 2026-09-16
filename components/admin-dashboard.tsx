@@ -1,1 +1,1 @@
-export { AdminControlCenter as AdminDashboard } from "@/frontend/admin/control-center";
+export { AdminSecurityGate as AdminDashboard } from "@/frontend/admin/security-gate";

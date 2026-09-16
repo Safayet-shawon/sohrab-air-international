@@ -34,12 +34,30 @@ export const auditEvents = sqliteTable("audit_events", {
 export const staffMembers = sqliteTable("staff_members", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
+  loginId: text("login_id").notNull().default(""),
+  passwordHash: text("password_hash").notNull().default(""),
+  passwordSalt: text("password_salt").notNull().default(""),
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: text("locked_until"),
   name: text("name").notNull(),
   role: text("role").notNull().default("manager"),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   createdBy: text("created_by"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (table) => [uniqueIndex("idx_staff_identifier").on(table.identifier)]);
+}, (table) => [
+  uniqueIndex("idx_staff_identifier").on(table.identifier),
+  uniqueIndex("idx_staff_login_id").on(table.loginId),
+]);
+
+export const adminSessions = sqliteTable("admin_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  staffId: text("staff_id").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_admin_sessions_staff").on(table.staffId),
+  index("idx_admin_sessions_expires").on(table.expiresAt),
+]);
 
 export const packages = sqliteTable("packages", {
   id: text("id").primaryKey(),

@@ -1,0 +1,6 @@
+import { eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { adminSessions, staffMembers } from "@/db/schema";
+import { cleanLoginId, createAdminSession, createPassword, isDenied, requireAdmin, sessionCookie } from "@/backend/admin-auth";
+
+export async function PATCH(request:Request){const actor=await requireAdmin(request,true,true);if(isDenied(actor))return actor;const body=await request.json() as {loginId?:string;password?:string};const loginId=cleanLoginId(body.loginId);if(loginId.length<4)return Response.json({error:"Admin ID must be at least 4 letters or numbers"},{status:400});let secret:Awaited<ReturnType<typeof createPassword>>;try{secret=await createPassword(body.password||"")}catch(e){return Response.json({error:e instanceof Error?e.message:"Invalid password"},{status:400})}const db=getDb();try{await db.batch([db.update(staffMembers).set({loginId,...secret,failedLoginAttempts:0,lockedUntil:null}).where(eq(staffMembers.id,actor.id)),db.delete(adminSessions).where(eq(adminSessions.staffId,actor.id))])}catch{return Response.json({error:"This Admin ID is already in use"},{status:409})}const token=await createAdminSession(actor.id);return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Set-Cookie":sessionCookie(token)}})}
