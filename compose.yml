@@ -1,0 +1,58 @@
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sohrab
+      POSTGRES_USER: sohrab
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sohrab -d sohrab"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: jdbc:postgresql://database:5432/sohrab
+      DATABASE_USER: sohrab
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+      OWNER_LOGIN: ${OWNER_LOGIN:?Set OWNER_LOGIN}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:?Set OWNER_PASSWORD}
+      PUBLIC_ORIGIN: https://${SITE_DOMAIN:?Set SITE_DOMAIN}
+      UPLOAD_DIR: /data/passports
+    volumes:
+      - passport_files:/data/passports
+    depends_on:
+      database:
+        condition: service_healthy
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://backend:8080
+    restart: unless-stopped
+    depends_on:
+      - backend
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+volumes:
+  postgres_data:
+  passport_files:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,21 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  tomcat:
+    max-part-count: 20
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/sohrab}
+    username: ${DATABASE_USER:sohrab}
+    password: ${DATABASE_PASSWORD:}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  flyway:
+    enabled: true
+app:
+  upload-dir: ${UPLOAD_DIR:/data/passports}
+  public-origin: ${PUBLIC_ORIGIN:http://localhost:3000}
+  owner-login: ${OWNER_LOGIN:}
+  owner-password: ${OWNER_PASSWORD:}

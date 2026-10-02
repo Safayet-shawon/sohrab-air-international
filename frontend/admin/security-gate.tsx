@@ -1,32 +1,40 @@
 "use client";
-import { useCallback,useEffect,useState } from "react";
-import { KeyRound,Loader2,Lock,LogOut,Plus,Save,ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { KeyRound, Loader2, Lock, LogOut, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { AdminControlCenter } from "@/frontend/admin/control-center";
+import { AdminControlCenter } from "@/admin/control-center";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 
-type Actor={id:string;name:string;role:"owner"|"manager";loginId:string;requiresPasswordSetup:boolean};
-type Staff={id:string;name:string;identifier:string;loginId:string;role:string;active:boolean};
-async function call(url:string,options?:RequestInit){const response=await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options?.headers||{})}});const data=await response.json();return{response,data}}
-
-export function AdminSecurityGate({displayName}:{displayName:string}){
-  const[mode,setMode]=useState<"checking"|"setup"|"login"|"ready"|"denied">("checking");
-  const[actor,setActor]=useState<Actor|null>(null),[message,setMessage]=useState("");
-  const check=useCallback(async()=>{setMode("checking");const{response,data}=await call("/api/admin/overview",{cache:"no-store"});if(response.ok){setActor(data.actor);setMode(data.requiresPasswordSetup?"setup":"ready");return}setMessage(data.error||"Admin access unavailable");setMode(data.code==="ADMIN_LOGIN_REQUIRED"?"login":"denied");},[]);
-  useEffect(()=>{check()},[check]);
+export function AdminSecurityGate({displayName}:{displayName:string}) {
+  const [mode,setMode]=useState<"checking"|"login"|"ready">("checking");
+  const [message,setMessage]=useState("");
+  const check=useCallback(async()=>{
+    setMode("checking");
+    try {
+      const response=await fetch("/api/admin/overview",{cache:"no-store"});
+      if(response.ok){setMode("ready");return}
+      const data=await response.json();
+      setMessage(data.error||"Admin login required");
+    } catch {setMessage("Backend unavailable. Please try again.");}
+    setMode("login");
+  },[]);
+  useEffect(()=>{void check()},[check]);
   if(mode==="checking")return <div className="admin-loading"><Loader2 className="animate-spin"/>Security check…</div>;
-  if(mode==="setup")return <CredentialsForm title="Create owner credentials" description="Choose a private Admin ID and a password of at least 10 characters." onDone={check}/>;
   if(mode==="login")return <LoginForm message={message} onDone={check}/>;
-  if(mode==="denied")return <div className="admin-card security-card"><Lock/><h2>Access denied</h2><p>{message}</p></div>;
-  return <div className="grid gap-4"><div className="security-toolbar"><span><ShieldCheck/>Protected admin session</span><Button variant="outline" onClick={async()=>{await call('/api/admin/logout',{method:'POST'});setMode('login')}}><LogOut/>Lock panel</Button></div>{actor?.role==='owner'&&<OwnerCredentialCenter actor={actor}/>}<AdminControlCenter displayName={displayName}/></div>;
+  return <div className="grid gap-4"><div className="security-toolbar"><span><ShieldCheck/>Protected admin session</span><Button variant="outline" onClick={async()=>{await fetch("/api/admin/logout",{method:"POST"});setMode("login")}}><LogOut/>Lock panel</Button></div><AdminControlCenter displayName={displayName}/></div>;
 }
-
-function LoginForm({message,onDone}:{message:string;onDone:()=>void}){const[loginId,setLoginId]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(message);async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);const{response,data}=await call('/api/admin/login',{method:'POST',body:JSON.stringify({loginId,password})});setBusy(false);if(!response.ok){setError(data.error||'Login failed');return}toast.success('Admin panel unlocked');onDone()}return <form className="admin-card security-card" onSubmit={submit}><KeyRound/><span className="eyebrow">Second security layer</span><h2>Admin login</h2><p>Use the Admin ID and password assigned by the main owner.</p><label>Admin ID<Input value={loginId} onChange={e=>setLoginId(e.target.value)} autoComplete="username" required/></label><label>Password<Input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" required/></label>{error&&<p className="security-error">{error}</p>}<Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<Lock/>}Unlock admin panel</Button></form>}
-
-function CredentialsForm({title,description,onDone}:{title:string;description:string;onDone:()=>void}){const[loginId,setLoginId]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[busy,setBusy]=useState(false);async function submit(e:React.FormEvent){e.preventDefault();if(password!==confirm){toast.error('Passwords do not match');return}setBusy(true);const{response,data}=await call('/api/admin/credentials',{method:'PATCH',body:JSON.stringify({loginId,password})});setBusy(false);if(!response.ok){toast.error(data.error||'Unable to save credentials');return}toast.success('Owner credentials saved');onDone()}return <form className="admin-card security-card" onSubmit={submit}><KeyRound/><span className="eyebrow">Main owner only</span><h2>{title}</h2><p>{description}</p><label>Admin ID<Input value={loginId} onChange={e=>setLoginId(e.target.value)} minLength={4} required/></label><label>New password<Input type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={10} required/></label><label>Confirm password<Input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} minLength={10} required/></label><Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<Save/>}Save credentials</Button></form>}
-
-function OwnerCredentialCenter({actor}:{actor:Actor}){const[open,setOpen]=useState(false),[staff,setStaff]=useState<Staff[]>([]),[name,setName]=useState(''),[identifier,setIdentifier]=useState(''),[loginId,setLoginId]=useState(''),[password,setPassword]=useState('');const load=useCallback(async()=>{const{response,data}=await call('/api/admin/staff');if(response.ok)setStaff(data.staff||[])},[]);useEffect(()=>{if(open)load()},[open,load]);async function add(){const{response,data}=await call('/api/admin/staff',{method:'POST',body:JSON.stringify({name,identifier,loginId,password})});if(!response.ok){toast.error(data.error||'Unable to add manager');return}setName('');setIdentifier('');setLoginId('');setPassword('');toast.success('Manager credentials created');load()}return <section className="admin-card credential-center"><div className="panel-heading"><div><span className="eyebrow">Owner security</span><h2>Admin credentials</h2><p>Change your own credentials or create/reset manager credentials.</p></div><Button variant="outline" onClick={()=>setOpen(v=>!v)}><KeyRound/>{open?'Close':'Manage credentials'}</Button></div>{open&&<div className="credential-grid"><CredentialsForm title="Change my Admin ID/password" description={`Current Admin ID: ${actor.loginId}`} onDone={()=>toast.success('Credentials changed')}/><div className="admin-card"><h2>Add manager credentials</h2><div className="mt-4 grid gap-3"><label>Manager name<Input value={name} onChange={e=>setName(e.target.value)}/></label><label>ChatGPT email or user ID<Input value={identifier} onChange={e=>setIdentifier(e.target.value)}/></label><label>Admin ID<Input value={loginId} onChange={e=>setLoginId(e.target.value)}/></label><label>Temporary password<Input type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={10}/></label><Button onClick={add} disabled={!name||!identifier||!loginId||password.length<10}><Plus/>Create manager</Button></div></div><div className="manager-credentials"><h3>Manager accounts</h3>{staff.filter(s=>s.role==='manager').map(s=><ManagerEditor key={s.id} staff={s} reload={load}/>)}</div></div>}</section>}
-
-function ManagerEditor({staff,reload}:{staff:Staff;reload:()=>void}){const[name,setName]=useState(staff.name),[identifier,setIdentifier]=useState(staff.identifier),[loginId,setLoginId]=useState(staff.loginId),[password,setPassword]=useState(''),[active,setActive]=useState(staff.active);async function save(){const{response,data}=await call(`/api/admin/staff/${staff.id}`,{method:'PATCH',body:JSON.stringify({name,identifier,loginId,password:password||undefined,active})});if(!response.ok){toast.error(data.error||'Unable to update manager');return}setPassword('');toast.success('Manager credentials updated');reload()}return <div className="manager-editor"><Input value={name} onChange={e=>setName(e.target.value)} aria-label="Manager name"/><Input value={identifier} onChange={e=>setIdentifier(e.target.value)} aria-label="ChatGPT identity"/><Input value={loginId} onChange={e=>setLoginId(e.target.value)} aria-label="Admin ID"/><Input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="New password (optional)"/><Switch checked={active} onCheckedChange={setActive}/><Button size="icon" onClick={save}><Save/></Button></div>}
+function LoginForm({message,onDone}:{message:string;onDone:()=>void}) {
+  const [loginId,setLoginId]=useState(""),[password,setPassword]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState(message);
+  async function submit(event:React.FormEvent) {
+    event.preventDefault();setBusy(true);
+    try {
+      const response=await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({loginId,password})});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||"Login failed");
+      toast.success("Admin panel unlocked");onDone();
+    } catch(e){setError(e instanceof Error?e.message:"Login failed");}
+    finally{setBusy(false);}
+  }
+  return <form className="admin-card security-card" onSubmit={submit}><KeyRound/><span className="eyebrow">Administration</span><h2>Admin login</h2><p>Enter your Admin ID and password.</p><label>Admin ID<Input value={loginId} onChange={e=>setLoginId(e.target.value)} autoComplete="username" required/></label><label>Password<Input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" required/></label>{error&&<p className="security-error">{error}</p>}<Button disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<Lock/>}Unlock admin panel</Button></form>;
+}
