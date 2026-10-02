@@ -1,40 +1,30 @@
 # Sohrab Air International
 
-Full-stack bilingual website for Hajj and Umrah packages, flight quotation requests, overseas recruitment applications, group-leader enquiries, passport uploads, and agency request management.
+Bilingual Hajj, Umrah, ticketing, recruitment and group-leader website. The codebase has two independent services:
 
-## Features
+- `frontend/`: Next.js website and admin dashboard.
+- `backend/`: Java 21 / Spring Boot API with PostgreSQL, Flyway migrations and private passport file storage.
 
-- Bengali/English customer interface with responsive sidebar navigation
-- Hajj and Umrah packages with itinerary roadmap and booking form
-- Air-ticket quotation workflow
-- Overseas job application and official verification links
-- Group-leader call requests
-- Cloudflare D1 database for durable submission records
-- Private R2 storage for passport images
-- ChatGPT sign-in protected owner dashboard
-- Request status workflow: new, contacted, confirmed, closed
+## Run locally
 
-## Local development
-
-Requirements: Node.js 22.13 or newer.
+Requirements: Docker and Docker Compose. Copy `.env.example` to `.env`, set a real domain, a random database password, an owner Admin ID and a strong owner password (at least 12 characters). Point the domain's DNS A/AAAA record to the server and open ports 80 and 443.
 
 ```bash
-npm ci
-npm run db:generate
-npm run build
+docker compose up --build -d
+docker compose ps
 ```
 
-For local D1 testing, apply the generated migrations as documented in the starter scripts, then run:
+Caddy serves the website over HTTPS and renews certificates. The Java API and PostgreSQL are private to the Compose network. After start, check `https://<SITE_DOMAIN>/api/health`, open `/admin`, and sign in with `OWNER_LOGIN` and `OWNER_PASSWORD`. Create manager accounts from the Team access tab. Publish verified packages in the Packages tab before advertising them.
 
-```bash
-npm start
-```
+For separate development, start PostgreSQL, set `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `OWNER_LOGIN`, `OWNER_PASSWORD`, `PUBLIC_ORIGIN=http://localhost:3000`, and `UPLOAD_DIR`, then run `mvn spring-boot:run` from `backend/`. In `frontend/`, run `npm ci`, set `API_INTERNAL_URL=http://localhost:8080`, then run `npm run dev`.
 
-## Data and security
+## Production checks
 
-- Passport uploads accept only valid JPG, PNG, or WebP images up to 5 MB.
-- Files are stored separately from database records.
-- Admin API routes require an authenticated Sites user.
-- Keep the Sites access policy owner-only until an explicit production sharing decision is made.
+- Confirm the business name, address, phone, email, licences and all regulatory links before publication.
+- Add only verified packages and prices. The public website has no sample price or job listing fallback.
+- Back up the PostgreSQL volume and the passport files volume together. Restore both in a rehearsal before accepting real applications.
+- Protect the server, restrict SSH, and store `.env` outside Git. Rotate owner credentials from the Admin page. Changing `OWNER_PASSWORD` after first startup does not reset the stored password.
+- The old Cloudflare D1 and R2 data are **not migrated**. Export and import existing records and files before switching a live site to this stack.
+- Update the existing deployment to use this Docker Compose stack. The old Sites/Cloudflare deployment cannot execute the Java service.
 
-Package prices and job listings in the interface are sample content and must be confirmed before public launch.
+CI verifies the frontend lint/build and backend Maven tests. No production deployment occurs automatically.
