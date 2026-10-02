@@ -151,7 +151,7 @@ public class AdminController {
     private String jsonList(Object value) {
         List<String> list = value instanceof List<?> a ? a.stream().map(v -> PublicController.clean(String.valueOf(v), 160)).toList()
                 : value instanceof String s ? java.util.Arrays.stream(s.split("[,\\n]")).map(v -> PublicController.clean(v, 160)).toList() : List.of();
-        try { return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(list.stream().filter(v -> !v.isBlank()).limit(30).toList()); }
+        try { return new tools.jackson.databind.ObjectMapper().writeValueAsString(list.stream().filter(v -> !v.isBlank()).limit(30).toList()); }
         catch (Exception error) { throw new IllegalStateException(error); }
     }
     private List<Map<String, Object>> staffRows() {
