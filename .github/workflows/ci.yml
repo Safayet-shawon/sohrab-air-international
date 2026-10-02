@@ -23,6 +23,20 @@ jobs:
           API_INTERNAL_URL: http://backend:8080
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sohrab_test
+          POSTGRES_USER: sohrab
+          POSTGRES_PASSWORD: integration-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sohrab -d sohrab_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -35,3 +49,5 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
       - run: mvn --batch-mode verify
+        env:
+          INTEGRATION_DB_URL: jdbc:postgresql://localhost:5432/sohrab_test
