@@ -19,7 +19,7 @@ export function AdminSecurityGate({displayName}:{displayName:string}) {
     } catch {setMessage("Backend unavailable. Please try again.");}
     setMode("login");
   },[]);
-  useEffect(()=>{void check()},[check]);
+  useEffect(()=>{const timer=setTimeout(()=>{void check()},0);return()=>clearTimeout(timer)},[check]);
   if(mode==="checking")return <div className="admin-loading"><Loader2 className="animate-spin"/>Security check…</div>;
   if(mode==="login")return <LoginForm message={message} onDone={check}/>;
   return <div className="grid gap-4"><div className="security-toolbar"><span><ShieldCheck/>Protected admin session</span><Button variant="outline" onClick={async()=>{await fetch("/api/admin/logout",{method:"POST"});setMode("login")}}><LogOut/>Lock panel</Button></div><AdminControlCenter displayName={displayName}/></div>;
