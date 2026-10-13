@@ -5,6 +5,15 @@ Bilingual Hajj, Umrah, ticketing, recruitment and group-leader website. The code
 - `frontend/`: Next.js website and admin dashboard.
 - `backend/`: Java 21 / Spring Boot API with PostgreSQL, Flyway migrations and private passport file storage.
 
+## Deploy the demo on Vercel
+
+The `frontend/` app also runs without the Java backend. When `API_INTERNAL_URL` is **not** set, it builds in demo mode:
+
+- the public website, package list and request forms work, saving to the visitor's browser;
+- **Admin Login** in the top bar opens the CRM directly with no password, pre-filled with fictional sample data (leads pipeline, accounts, packages, employees with attendance/tasks/payroll/performance, and a "Needs attention" queue).
+
+On Vercel: import this repository, set **Root Directory** to `frontend`, keep the Next.js preset, and leave `API_INTERNAL_URL` unset. Do not collect real passports on the demo — data never leaves the browser and the admin has no password. Use the Docker stack below for real customer data.
+
 ## Run locally
 
 Requirements: Docker and Docker Compose. Copy `.env.example` to `.env`, set a real domain, a random database password, an owner Admin ID and a strong owner password (at least 12 characters). Point the domain's DNS A/AAAA record to the server and open ports 80 and 443.
