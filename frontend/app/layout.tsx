@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BASE } from "@/lib/mode";
 import "./globals.css";
 import { SiteShell } from "@/components/site-shell";
 
@@ -6,8 +7,8 @@ export const metadata: Metadata = {
   title: "Sohrab Air International",
   description: "Hajj, Umrah, air ticketing and responsible overseas employment services from Dhaka, Bangladesh.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: `${BASE}/favicon.svg`,
+    shortcut: `${BASE}/favicon.svg`,
   },
 };
 

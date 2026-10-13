@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { BASE } from "@/lib/mode";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, Bell, Boxes, CheckCheck, ChevronRight, Database, Download, LayoutDashboard, Menu, RotateCcw, Search, Upload, Users, Wallet, X, Zap } from "lucide-react";
@@ -41,14 +42,14 @@ export function CRMApp() {
   const [search, setSearch] = useState("");
   const [searchKey, setSearchKey] = useState(0);
   useEffect(() => { try { sessionStorage.setItem("crm-view", view); } catch { /* ignore */ } window.scrollTo({ top: 0, behavior: "smooth" }); }, [view]);
-  if (!s) return <div className="crm-boot"><div className="crm-loader"><img src="/brand-logo.svg" alt="" /><span /></div><p>Opening admin panel…</p></div>;
+  if (!s) return <div className="crm-boot"><div className="crm-loader"><img src={`${BASE}/brand-logo.svg`} alt="" /><span /></div><p>Opening admin panel…</p></div>;
   const alerts = attentionItems(s);
   const go = (v: string) => { setView(v as View); setMenu(false); };
   const openLead = (id: string) => setLeadId(id);
   const [title, sub] = TITLES[view];
   return <div className="crm">
     <aside className={`crm-side ${menu ? "open" : ""}`}>
-      <div className="crm-brand"><img src="/brand-logo.svg" alt="" /><div><b>Sohrab Air</b><small>Agency CRM</small></div><button className="crm-close" onClick={() => setMenu(false)}><X /></button></div>
+      <div className="crm-brand"><img src={`${BASE}/brand-logo.svg`} alt="" /><div><b>Sohrab Air</b><small>Agency CRM</small></div><button className="crm-close" onClick={() => setMenu(false)}><X /></button></div>
       <nav>{NAV.map(([k, label, Icon]) => <button key={k} className={view === k ? "on" : ""} onClick={() => go(k)}>
         {view === k && <motion.span layoutId="nav-ink" className="nav-ink" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
         <Icon /><span>{label}</span>
